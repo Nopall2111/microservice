@@ -13,9 +13,8 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     private long produkId;
-    private long pelangganId;
-    private double harga;
     private int jumlah;
     private double total;
+    private String tanggal;
 
 }
