@@ -55,6 +55,16 @@ public class OrderController {
         orderService.update(id, jumlah, tanggal, status);
     }
     
+    @GetMapping("/sendEmail")
+    public String sendEmailExisting(@RequestParam Long id) {
+        orderService.sendOrderEmail(id);
+        return "Email berhasil dikirim untuk order ID: " + id;
+    }
+
+    @PostMapping("/sendEmail")
+    public Order createOrderAndSendEmail(@RequestBody Order order) {
+        return orderService.createOrderAndSendEmail(order);
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteOrder(@PathVariable long id){

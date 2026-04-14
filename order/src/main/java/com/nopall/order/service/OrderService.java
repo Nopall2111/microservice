@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.stereotype.Service;
@@ -28,22 +29,38 @@ public class OrderService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public List<Order> getAll(){
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    public List<Order> getAll() {
         return orderRepository.findAll();
     }
 
-    public Order createOrder(Order order){
-        return orderRepository.save(order);
+    public Order createOrder(Order order) {
+        Order savedOrder = orderRepository.save(order);
+        return savedOrder;
+    }
+
+    public void sendOrderEmail(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order tidak ditemukan"));
+        rabbitTemplate.convertAndSend("myQueue", order.toString());
+    }
+
+    public Order createOrderAndSendEmail(Order order) {
+        Order savedOrder = orderRepository.save(order);
+        rabbitTemplate.convertAndSend("myQueue", savedOrder.toString());
+        return savedOrder;
     }
 
     @Transactional
     public void update(Long orderId, Integer jumlah, String tanggal, String status) {
         // Auto generated method s
-        Order order = orderRepository.findById(orderId).orElseThrow(()
-                -> new IllegalStateException("Order tidak ada"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new IllegalStateException("Order tidak ada"));
         if (jumlah != null) {
             order.setJumlah(jumlah);
-        } if (tanggal != null && tanggal.length() > 0
+        }
+        if (tanggal != null && tanggal.length() > 0
                 && !Objects.equals(order.getTanggal(), tanggal)) {
             order.setTanggal(tanggal);
         }
@@ -53,7 +70,7 @@ public class OrderService {
         return orderRepository.findById(id).orElse(null);
     }
 
-    public List<ResponseTemplate> getOrderWithProdukById(Long id){
+    public List<ResponseTemplate> getOrderWithProdukById(Long id) {
         List<ResponseTemplate> resoponseList = new ArrayList<>();
         Order order = getOrderById(id);
         ServiceInstance serviceInstance = discoveryClient.getInstances("PRODUK").get(0);
@@ -66,7 +83,7 @@ public class OrderService {
         return resoponseList;
     }
 
-    public void deleteOrder(long id){
+    public void deleteOrder(long id) {
         orderRepository.deleteById(id);
     }
 }
