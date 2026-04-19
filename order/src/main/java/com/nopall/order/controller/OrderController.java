@@ -14,12 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nopall.order.model.Order;
 import com.nopall.order.service.OrderService;
+import com.nopall.order.util.JwtUtil;
 import com.nopall.order.vo.ResponseTemplate;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
-
-
 
 @RestController
 @RequestMapping("/api/order")
@@ -27,13 +28,21 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     @GetMapping
-    public List<Order> getAll(){
+    public List<Order> getAll() {
         return orderService.getAll();
     }
 
     @PostMapping
-    public Order createOrder(@RequestBody Order order){
+    public Order createOrder(@RequestBody Order order, HttpServletRequest request) {
+        String token = request.getHeader("Authorization").substring(7);
+        String username = jwtUtil.extractUsername(token);
+        String role = jwtUtil.extractRole(token);
+        order.setCreatedBy(username);
+        order.setRole(role);
         return orderService.createOrder(order);
     }
 
@@ -41,12 +50,12 @@ public class OrderController {
     public Order getOrderById(@PathVariable("id") Long id) {
         return orderService.getOrderById(id);
     }
-    
+
     @GetMapping(path = "/produk/{id}")
     public List<ResponseTemplate> getOrderWithProdukById(@PathVariable("id") Long id) {
         return orderService.getOrderWithProdukById(id);
     }
-    
+
     @PutMapping(path = "/{id}")
     public void updateOrder(@PathVariable("id") Long id,
             @RequestParam(required = false) int jumlah,
@@ -54,7 +63,7 @@ public class OrderController {
             @RequestParam(required = false) String status) {
         orderService.update(id, jumlah, tanggal, status);
     }
-    
+
     @GetMapping("/sendEmail")
     public String sendEmailExisting(@RequestParam Long id) {
         orderService.sendOrderEmail(id);
@@ -67,7 +76,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteOrder(@PathVariable long id){
+    public ResponseEntity<?> deleteOrder(@PathVariable long id) {
         orderService.deleteOrder(id);
         return ResponseEntity.ok().build();
     }
