@@ -24,7 +24,7 @@ public class ConsumerService {
         System.out.println("Received: " + message);
 
         SimpleMailMessage mail = new SimpleMailMessage();
-        mail.setTo("yukkineesan@gmail.com");
+        mail.setTo("ervan@pnp.ac.id");
         mail.setSubject("Order Baru Masuk");
         mail.setText(
                 "ORDER BARU MASUK\n\n" +
