@@ -1,0 +1,29 @@
+groups:
+  - name: microservice-alerts
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"eureka|gateway|auth|produk|pelanggan|order"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} down"
+          description: "{{ $labels.job }} tidak merespon selama lebih dari 1 menit."
+
+      - alert: AuthSuspiciousLoginFailureRate
+        expr: rate(http_server_requests_seconds_count{application="auth", uri="/api/auth/login", outcome="SERVER_ERROR"}[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Login auth-service gagal terus-menerus"
+          description: "Lonjakan gagal login di /api/auth/login — indikasi brute force, atau auth-service error."
+
+      - alert: OrderHighLatency
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{application="order"}[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Order service lambat"
+          description: "P95 latency order-service > 1s, kemungkinan karena panggilan ke produk-service lewat Eureka lambat/timeout."

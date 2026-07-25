@@ -1,0 +1,130 @@
+networks:
+  microservice-net:
+    driver: bridge
+
+services:
+  # ===== Infrastruktur dasar =====
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks: [microservice-net]
+
+  eureka:
+    build: ./eureka
+    container_name: eureka
+    ports: ["8761:8761"]
+    networks: [microservice-net]
+
+  # ===== Core microservices =====
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports: ["9000:9000"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on: [eureka]
+    networks: [microservice-net]
+
+  auth:
+    build: ./auth
+    container_name: auth
+    ports: ["8090:8090"]
+    networks: [microservice-net]
+
+  produk:
+    build: ./produk
+    container_name: produk
+    ports: ["8081:8081"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on: [eureka]
+    networks: [microservice-net]
+
+  pelanggan:
+    build: ./pelanggan
+    container_name: pelanggan
+    ports: ["8082:8082"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on: [eureka]
+    networks: [microservice-net]
+
+  order:
+    build: ./order
+    container_name: order
+    ports: ["8083:8083"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on: [eureka, rabbitmq, produk]
+    networks: [microservice-net]
+
+  producer:
+    build: ./producer
+    container_name: producer
+    ports: ["8085:8085"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on: [rabbitmq]
+    networks: [microservice-net]
+
+  consumer:
+    build: ./consumer
+    container_name: consumer
+    ports: ["8086:8086"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on: [rabbitmq]
+    networks: [microservice-net]
+
+  # ===== Monitoring =====
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+    ports: ["9090:9090"]
+    networks: [microservice-net]
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on: [prometheus]
+    networks: [microservice-net]
+
+  # ===== Logging (ELK) =====
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.4.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports: ["9200:9200"]
+    networks: [microservice-net]
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:9.4.2
+    container_name: logstash
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    ports: ["5000:5000"]
+    depends_on: [elasticsearch]
+    networks: [microservice-net]
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.4.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    ports: ["5601:5601"]
+    depends_on: [elasticsearch]
+    networks: [microservice-net]

@@ -1,0 +1,51 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert.rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'eureka'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['eureka:8761']
+
+  - job_name: 'gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway:9000']
+
+  - job_name: 'auth'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['auth:8090']
+
+  - job_name: 'produk'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['produk:8081']
+
+  - job_name: 'pelanggan'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['pelanggan:8082']
+
+  - job_name: 'order'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['order:8083']
+
+  - job_name: 'producer'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['producer:8085']
+
+  - job_name: 'consumer'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['consumer:8086']
